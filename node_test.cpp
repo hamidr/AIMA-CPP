@@ -1,6 +1,6 @@
 #include <string>
 
-#include "node.hpp"
+#include <stdio.h>
 #include "search.hpp"
 
 using namespace AI;
@@ -34,7 +34,7 @@ int main()
 
 	printf("\n");
 	
-	BFGS(IntProblem());
+	BFTS(IntProblem());
 
 	return 0;
 }

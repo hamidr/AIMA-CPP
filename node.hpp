@@ -1,7 +1,8 @@
 #ifndef NODE_HPP
 #define NODE_HPP
 
-#include <list>
+#include <vector>
+#include <memory>
 
 namespace AI 
 {
@@ -9,65 +10,55 @@ namespace AI
 template <typename T>
 class Node
 {
+public:
 	using value_type = T;
 	using node_type = Node<T>;
-	using node_ptr = node_type *;
+	using node_ptr = std::shared_ptr<node_type>;
+	using leafs_list = std::vector<node_ptr>;
 
+ 	Node(const node_type&n, const node_type *p)
+	: mValue(n.mValue), mLeafs(n.mLeafs), mParent(p)
+	{ }
 
-public:
-	using leafs_list = std::list<node_ptr>;
+	Node(node_type&& t, const node_type * p = nullptr) 
+	: mValue(std::move(t.mValue)), mLeafs(std::move(t.mLeafs)), mParent(p) 
+	{ }
 
- 	Node(const node_type&) = delete;
-	Node(node_type&& t) = default;
-
-	explicit inline
-	Node(const T &value)
-		: Node(T(value)) { }
-
-	inline
-	Node(T &&value)
-		: mValue(std::move(value)) { }
+	inline Node(T value) 
+	: mValue(std::forward<T>(value)) { }
 
 	~Node() {
-		for(auto e : mCleanLater)
-			delete e;
 	}
 
-	inline
-	T getValue() const {
-		return mValue;	
-	}
+	inline node_ptr getParent() const
+	{ return mParent;  }
 
-	inline
-	node_type &addLeaf(T &&value) {
-		return this->addLeaf(new Node(std::forward<T>(value)), true);
-	}
+	inline T getValue() const
+	{ return mValue; }
 
-	inline
-	node_type &addLeaf(node_type &&node) {
-		return this->addLeaf(new node_type(std::move(node)), true);
-	}
+	inline leafs_list getLeafs() const 
+	{ return mLeafs; }
 
-	inline
-	node_type &addLeaf(node_type &node) {
-		return this->addLeaf(&node, false);
-	}
+	inline node_type &addLeaf(T value)
+	{ return this->addLeaf(std::make_shared<node_type>(std::forward<T>(value), this)); }
 
-	node_type &addLeaf(node_ptr nextLeaf, bool gc ) 
-	{
+	inline node_type &addLeaf(node_type &&node) 
+	{ return this->addLeaf(std::make_shared<node_type>(std::move(node), this)); }
+
+	inline node_type &addLeaf(const node_type &node)
+	{ return this->addLeaf(std::make_shared<node_type>(node,this)); }
+
+	node_type &addLeaf(node_ptr &&nextLeaf ) {
 		mLeafs.push_back(nextLeaf);
-		if (gc)
-			mCleanLater.push_back(nextLeaf);
 		return *nextLeaf;
 	}
 
-	leafs_list getLeafs() const 
-	{ return mLeafs; }
 
 private:
 	const T mValue;
+	const node_type *mParent = nullptr;
+
 	leafs_list mLeafs;
-	leafs_list mCleanLater;
 };
 
 }

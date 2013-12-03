@@ -5,33 +5,40 @@
 #include <memory>
 #include <deque>
 #include <stack>
-
+#include <memory>
+#include "node.hpp"
 
 namespace AI 
 {
+
+using std::shared_ptr;
+using std::make_shared;
 
 template <typename T>
 struct Problem
 {
 	using value_type = T;
+	using node_type = Node<value_type>;
+	using node_ptr = typename node_type::node_ptr;
+	using leafs_list = typename node_type::leafs_list;
 
 	Problem(const Problem&) = delete;
 	Problem(Problem&&) = default;
 
 	Problem(T head)
-	: mTree(new Node<T>(head)) 
+	: mTree(std::make_shared<node_type>(head)) 
 	{ }
 
-	Node<T> & getRoot() const
+	inline node_type & getRoot() const
 	{ return *mTree; }
 
-	typename Node<T>::leafs_list expand(const Node<T> *node)
+	inline leafs_list expand(const node_ptr &node)
 	{ return node->getLeafs(); }
 
-	Node<T> * initial() const 
-	{ return mTree.get(); }
+	inline node_ptr initial() const 
+	{ return mTree; }
 
-	bool testGoal(const Node<T> *node) const 
+	bool testGoal(const node_ptr &node) const 
 	{
 		T && val = node->getValue();
 		this->watch(val);
@@ -45,7 +52,7 @@ protected:
 	using daddy_type = Problem<T>;
 
 private:
-	std::unique_ptr<Node<T>> mTree;
+	node_ptr mTree;
 };
 
 
@@ -105,10 +112,18 @@ E treeSearch(C fringe, P &problem)
 	return problem.initial();
 }
 
+
+template<typename T>
+struct NodePtrCompare : public std::less<T>
+{
+	bool operator()(const T &t1, const T &t2)
+	{ return t1->getValue() < t2->getValue(); }
+};
+
 template < typename C, typename P, typename E = typename C::value_type >
 E graphSearch(C fringe, P &problem)
 {
-	set<E> explored;
+	set<E, NodePtrCompare<E>> explored;
 
 	fringe.push(problem.initial());
 	while(! fringe.empty())
@@ -122,7 +137,7 @@ E graphSearch(C fringe, P &problem)
 			return node;
 
 		auto nodes = problem.expand(node);
-		for(const E e : nodes)
+		for(const E &e : nodes)
 			fringe.push(e);
 	}
 
@@ -136,25 +151,25 @@ using namespace Private;
 template <typename P>
 void BFTS(P p)
 {
-	treeSearch(MyQueue<Node<typename P::value_type>*>(), p );
+	treeSearch(MyQueue<typename P::node_ptr>(), p );
 }
 
 template <typename P>
 void DFTS(P p)
 {
-	treeSearch(MyStack<Node<typename P::value_type>*>(), p );
+	treeSearch(MyStack<typename P::node_ptr>(), p );
 }
 
 template <typename P>
 void DFGS(P p)
 {
-	graphSearch(MyStack<Node<typename P::value_type>*>(), p);
+	graphSearch(MyStack<typename P::node_ptr>(), p);
 }
 
 template <typename P>
 void BFGS(P p)
 {
-	graphSearch(MyQueue<Node<typename P::value_type>*>(), p );
+	graphSearch(MyQueue<typename P::node_ptr>(), p );
 }
 
 }
