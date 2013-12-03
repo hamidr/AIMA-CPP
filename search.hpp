@@ -15,8 +15,11 @@ struct Problem
 {
 	using value_type = T;
 
-  	Problem(T head)
-	: mTree(new member_type(head)) 
+	Problem(const Problem&) = delete;
+	Problem(Problem&&) = default;
+
+	Problem(T head)
+	: mTree(new Node<T>(head)) 
 	{ }
 
 	Node<T> & getRoot() const
@@ -38,11 +41,11 @@ struct Problem
 	virtual bool isGoal(const T &n) const = 0; 
 	virtual void watch(const T & n) const = 0; 
 
-	using member_type = Node<T>;
+protected:
 	using daddy_type = Problem<T>;
 
 private:
-	std::unique_ptr<member_type> mTree;
+	std::unique_ptr<Node<T>> mTree;
 };
 
 
@@ -142,8 +145,6 @@ void DFTS(P p)
 	treeSearch(MyStack<Node<typename P::value_type>*>(), p );
 }
 
-
-
 template <typename P>
 void DFGS(P p)
 {
@@ -155,7 +156,6 @@ void BFGS(P p)
 {
 	graphSearch(MyQueue<Node<typename P::value_type>*>(), p );
 }
-
 
 }
 #endif

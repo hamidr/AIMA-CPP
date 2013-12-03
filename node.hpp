@@ -13,20 +13,12 @@ class Node
 	using node_type = Node<T>;
 	using node_ptr = node_type *;
 
- 	Node(const node_type&) = delete;
-	Node(const node_type&&) = delete;
-	node_type operator==(node_type&) = delete;
-	node_type operator==(node_type&&) = delete;
 
 public:
-
 	using leafs_list = std::list<node_ptr>;
 
-	Node(node_type&& t)
-		: mValue(std::move(t.mValue)),
-		mLeafs(std::move(t.mLeafs)),
-		mCleanLater(std::move(t.mCleanLater))
-	{}
+ 	Node(const node_type&) = delete;
+	Node(node_type&& t) = default;
 
 	explicit inline
 	Node(const T &value)
