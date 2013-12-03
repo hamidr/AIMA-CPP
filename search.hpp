@@ -6,10 +6,9 @@
 #include <deque>
 #include <stack>
 
-using std::set;
-using std::stack;
-using std::deque;
-using std::unique_ptr;
+
+namespace AI 
+{
 
 template <typename T>
 struct Problem
@@ -43,8 +42,16 @@ struct Problem
 	using daddy_type = Problem<T>;
 
 private:
-	unique_ptr<member_type> mTree;
+	std::unique_ptr<member_type> mTree;
 };
+
+
+namespace Private 
+{
+
+using std::set;
+using std::stack;
+using std::deque;
 
 template <typename T>
 struct MyQueue : public deque<T>
@@ -95,18 +102,6 @@ E treeSearch(C fringe, P &problem)
 	return problem.initial();
 }
 
-template <typename P>
-void BFTS(P p)
-{
-	treeSearch(MyQueue<Node<typename P::value_type>*>(), p );
-}
-
-template <typename P>
-void DFTS(P p)
-{
-	treeSearch(MyStack<Node<typename P::value_type>*>(), p );
-}
-
 template < typename C, typename P, typename E = typename C::value_type >
 E graphSearch(C fringe, P &problem)
 {
@@ -131,6 +126,24 @@ E graphSearch(C fringe, P &problem)
 	return problem.initial();
 }
 
+}
+
+using namespace Private;
+
+template <typename P>
+void BFTS(P p)
+{
+	treeSearch(MyQueue<Node<typename P::value_type>*>(), p );
+}
+
+template <typename P>
+void DFTS(P p)
+{
+	treeSearch(MyStack<Node<typename P::value_type>*>(), p );
+}
+
+
+
 template <typename P>
 void DFGS(P p)
 {
@@ -144,5 +157,5 @@ void BFGS(P p)
 }
 
 
-
+}
 #endif

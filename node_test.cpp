@@ -3,6 +3,8 @@
 #include "node.hpp"
 #include "search.hpp"
 
+using namespace AI;
+
 struct IntProblem : public Problem<int>
 {
   	IntProblem()

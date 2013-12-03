@@ -3,6 +3,9 @@
 
 #include <list>
 
+namespace AI 
+{
+
 template <typename T>
 class Node
 {
@@ -75,5 +78,6 @@ private:
 	leafs_list mCleanLater;
 };
 
+}
 
 #endif
