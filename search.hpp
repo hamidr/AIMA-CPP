@@ -6,71 +6,50 @@
 #include <deque>
 #include <stack>
 
-#include <stdio.h>
+using std::set;
+using std::stack;
+using std::deque;
+using std::unique_ptr;
 
-/*  
 template <typename T>
 struct Problem
 {
-  	Problem()
-	: mTree(new member_type(0)) 
-	{
-		mTree->addLeaf(1).addLeaf(2).addLeaf(3);
-		mTree->addLeaf(4);
-		mTree->addLeaf(*mTree);
-	}
+	using value_type = T;
 
-	Node<int>::leafs_list expand(const Node<int> *node)
+  	Problem(T head)
+	: mTree(new member_type(head)) 
+	{ }
+
+	Node<T> & getRoot() const
+	{ return *mTree; }
+
+	typename Node<T>::leafs_list expand(const Node<T> *node)
 	{ return node->getLeafs(); }
 
-	Node<int> * initial() const 
+	Node<T> * initial() const 
 	{ return mTree.get(); }
 
-	bool isGoal(const Node<int> *node) { 
-		printf("%d\n",node->getValue());
-		if (node->getValue() == 3)
-			return true;
-		return false;	
-	}
-
-private:
-	using member_type = Node<int>; 
-	std::unique_ptr<member_type> mTree;
-};
-
-*/
-struct Problem
-{
-  	Problem()
-	: mTree(new member_type(0)) 
+	bool testGoal(const Node<T> *node) const 
 	{
-		mTree->addLeaf(1).addLeaf(2).addLeaf(3);
-		mTree->addLeaf(4);
-		mTree->addLeaf(*mTree);
+		T && val = node->getValue();
+		this->watch(val);
+		return this->isGoal(val);
 	}
 
-	Node<int>::leafs_list expand(const Node<int> *node)
-	{ return node->getLeafs(); }
+	virtual bool isGoal(const T &n) const = 0; 
+	virtual void watch(const T & n) const = 0; 
 
-	Node<int> * initial() const 
-	{ return mTree.get(); }
-
-	bool isGoal(const Node<int> *node) { 
-		printf("%d\n",node->getValue());
-		if (node->getValue() == 3)
-			return true;
-		return false;	
-	}
+	using member_type = Node<T>;
+	using daddy_type = Problem<T>;
 
 private:
-	using member_type = Node<int>; 
-	std::unique_ptr<member_type> mTree;
+	unique_ptr<member_type> mTree;
 };
 
 template <typename T>
-struct MyQueue : public std::deque<T>
+struct MyQueue : public deque<T>
 {
-	using std::deque<T>::deque;
+	using deque<T>::deque;
 
 	void push(const T val)
 	{ this->push_back(val); }
@@ -84,14 +63,14 @@ struct MyQueue : public std::deque<T>
 };
 
 template <typename T>
-struct MyStack : public std::stack<T>
+struct MyStack : public stack<T>
 {
-	using std::stack<T>::stack;
+	using stack<T>::stack;
 
 	T pop() 
 	{
 		auto &&val = this->top();
-		std::stack<T>::pop(); // oops :P watch out the recurisve bug!
+		stack<T>::pop(); // oops :P watch out the recurisve bug!
 		return val;
 	}
 };
@@ -105,7 +84,7 @@ E treeSearch(C fringe, P &problem)
 	{
 		E node = fringe.pop();
 
-		if ( problem.isGoal(node) )
+		if ( problem.testGoal(node) )
 			return node;
 
 		auto nodes = problem.expand(node);
@@ -119,34 +98,33 @@ E treeSearch(C fringe, P &problem)
 template <typename P>
 void BFTS(P p)
 {
-	treeSearch(MyQueue<Node<int>*>(), p );
-
+	treeSearch(MyQueue<Node<typename P::value_type>*>(), p );
 }
 
 template <typename P>
 void DFTS(P p)
 {
-	treeSearch(MyStack<Node<int>*>(), p );
+	treeSearch(MyStack<Node<typename P::value_type>*>(), p );
 }
 
 template < typename C, typename P, typename E = typename C::value_type >
 E graphSearch(C fringe, P &problem)
 {
-	std::set<E> explored;
+	set<E> explored;
 
 	fringe.push(problem.initial());
 	while(! fringe.empty())
 	{
-		auto node = fringe.pop();
+		E node = fringe.pop();
 
 		if (explored.insert(node).second == false)
 			continue;
 
-		if ( problem.isGoal(node) )
+		if ( problem.testGoal(node) )
 			return node;
 
 		auto nodes = problem.expand(node);
-		for(auto &e : nodes)
+		for(const E e : nodes)
 			fringe.push(e);
 	}
 
@@ -156,8 +134,15 @@ E graphSearch(C fringe, P &problem)
 template <typename P>
 void DFGS(P p)
 {
-	graphSearch(MyStack<Node<int>*>(), p);
+	graphSearch(MyStack<Node<typename P::value_type>*>(), p);
 }
+
+template <typename P>
+void BFGS(P p)
+{
+	graphSearch(MyQueue<Node<typename P::value_type>*>(), p );
+}
+
 
 
 #endif

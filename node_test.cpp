@@ -3,38 +3,37 @@
 #include "node.hpp"
 #include "search.hpp"
 
+struct IntProblem : public Problem<int>
+{
+  	IntProblem()
+	: Problem(0) 
+	{
+		getRoot().addLeaf(1).addLeaf(2).addLeaf(3);
+		getRoot().addLeaf(4);
+		getRoot().addLeaf(getRoot());
+	}
+
+	void watch(const int &n) const override {
+		printf("%d\n",n);
+	}
+
+  	bool isGoal (const int & n) const override {
+		if ( n == 3 )
+			return true;
+		return false;
+	}
+};
+
+
 
 int main()
 {
-	Node<int> nodeInt(1);
-	auto &l4 = nodeInt.addLeaf(2);
-	l4.addLeaf(3).addLeaf(4);
-	auto &tt = nodeInt.addLeaf(5).addLeaf(l4);
-	tt.addLeaf(6).addLeaf(7).addLeaf(nodeInt);
-	tt.addLeaf(8).addLeaf(l4);
+	DFGS(IntProblem());
 
-	DFGS(Problem());
-	BFTS(Problem());
+	printf("\n");
+	
+	BFGS(IntProblem());
 
-	/* 
-	auto && n = map(nodeInt, [](const int &n){
-		printf("%d\n",n);
-		return std::to_string(n);
-	});
-
-	std::vector<std::string> vec;
-	//toSequencial(n, vec);
-
-	std::for_each(vec.begin(), vec.end(), [] (const std::string &str) {
-		printf("\"%s\"\n",str.c_str());
-		});
-
-
- 	mapOnce(nodeInt, [](const int &n){
-		printf("\"%d\"\n",n);
-	});
-
-*/
 	return 0;
 }
 
