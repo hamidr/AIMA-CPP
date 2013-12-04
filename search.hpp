@@ -6,6 +6,8 @@
 #include <deque>
 #include <stack>
 #include <memory>
+#include <iostream>
+
 #include "node.hpp"
 
 namespace AI 
@@ -17,8 +19,8 @@ using std::make_shared;
 template <typename T>
 struct Problem
 {
-	using value_type = T;
-	using node_type = Node<value_type>;
+	using state_type = T;
+	using node_type = Node<state_type>;
 	using node_ptr = typename node_type::node_ptr;
 	using leafs_list = typename node_type::leafs_list;
 
@@ -26,33 +28,38 @@ struct Problem
 	Problem(Problem&&) = default;
 
 	Problem(T head)
-	: mTree(std::make_shared<node_type>(head)) 
+	: mTree(make_shared<node_type>(head)) 
 	{ }
 
 	inline node_type & getRoot() const
 	{ return *mTree; }
 
-	inline leafs_list expand(const node_ptr &node)
-	{ return node->getLeafs(); }
-
 	inline node_ptr initial() const 
-	{ return mTree; }
+	{ return mTree->shared_from_this(); }
 
 	bool testGoal(const node_ptr &node) const 
 	{
-		T && val = node->getValue();
+		T && val = node->getState();
 		this->watch(val);
 		return this->isGoal(val);
 	}
 
-	virtual bool isGoal(const T &n) const = 0; 
-	virtual void watch(const T & n) const = 0; 
+	virtual bool isGoal(const T &value) const = 0;
+
+	virtual leafs_list successors( node_ptr &state) const
+	{ return state->expand(); }
+
+	virtual void pathCost(const node_ptr &state1) const {} 
+
+	virtual void watch(const T & n) const {
+		std::cout << n << std::endl;
+	}
 
 protected:
 	using daddy_type = Problem<T>;
 
 private:
-	node_ptr mTree;
+	const node_ptr mTree;
 };
 
 
@@ -73,7 +80,7 @@ struct MyQueue : public deque<T>
 
 	T pop() 
 	{
-		auto &&val = this->front();
+		auto val = this->front();
 		this->pop_front();
 		return val;
 	}
@@ -86,7 +93,7 @@ struct MyStack : public stack<T>
 
 	T pop() 
 	{
-		auto &&val = this->top();
+		auto val = this->top();
 		stack<T>::pop(); // oops :P watch out the recurisve bug!
 		return val;
 	}
@@ -94,18 +101,18 @@ struct MyStack : public stack<T>
 
 
 template < typename C, typename P, typename E = typename C::value_type  >
-E treeSearch(C fringe, P &problem)
+E treeSearch(C fringe, const P &problem)
 {
 	fringe.push(problem.initial());
 	while(! fringe.empty())
 	{
-		E node = fringe.pop();
+		E node(fringe.pop());
 
 		if ( problem.testGoal(node) )
 			return node;
 
-		auto nodes = problem.expand(node);
-		for(auto &e : nodes)
+		auto nodes = problem.successors(node);
+		for(const E &e : nodes)
 			fringe.push(e);
 	}
 
@@ -117,11 +124,11 @@ template<typename T>
 struct NodePtrCompare : public std::less<T>
 {
 	bool operator()(const T &t1, const T &t2)
-	{ return t1->getValue() < t2->getValue(); }
+	{ return t1->getState() < t2->getState(); }
 };
 
 template < typename C, typename P, typename E = typename C::value_type >
-E graphSearch(C fringe, P &problem)
+E graphSearch(C fringe, const P &problem)
 {
 	set<E, NodePtrCompare<E>> explored;
 
@@ -136,8 +143,8 @@ E graphSearch(C fringe, P &problem)
 		if ( problem.testGoal(node) )
 			return node;
 
-		auto nodes = problem.expand(node);
-		for(const E &e : nodes)
+		auto &&nodes = problem.successors(node);
+		for( const E e : nodes)
 			fringe.push(e);
 	}
 
@@ -148,28 +155,28 @@ E graphSearch(C fringe, P &problem)
 
 using namespace Private;
 
-template <typename P>
-void BFTS(P p)
+template <typename P, typename R = typename P::node_ptr>
+R BFTS(P p)
 {
-	treeSearch(MyQueue<typename P::node_ptr>(), p );
+	return treeSearch(MyQueue<R>(), p );
 }
 
-template <typename P>
-void DFTS(P p)
+template <typename P, typename R = typename P::node_ptr>
+R DFTS(P p)
 {
-	treeSearch(MyStack<typename P::node_ptr>(), p );
+	return treeSearch(MyStack<R>(), p );
 }
 
-template <typename P>
-void DFGS(P p)
+template <typename P, typename R = typename P::node_ptr>
+R DFGS(P p)
 {
-	graphSearch(MyStack<typename P::node_ptr>(), p);
+	return graphSearch(MyStack<R>(), p);
 }
 
-template <typename P>
-void BFGS(P p)
+template <typename P, typename R = typename P::node_ptr>
+R BFGS(P p)
 {
-	graphSearch(MyQueue<typename P::node_ptr>(), p );
+	return graphSearch(MyQueue<R>(), p );
 }
 
 }
