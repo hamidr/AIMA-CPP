@@ -20,6 +20,10 @@ struct Problem
 	Problem(const Problem&) = delete;
 	Problem(Problem&&) = default;
 
+	Problem(node_ptr && head)
+		: mTree(move(head)) 
+	{ }
+
 	Problem(T head)
 	: mTree(make_shared<node_type>(head)) 
 	{ }
@@ -41,8 +45,6 @@ struct Problem
 
 	virtual leafs_list successors( const node_ptr &state) const
 	{ return state->expand(); }
-
-	virtual void pathCost(const node_ptr &state1) const {} 
 
 	virtual void watch(const T & n) const {
 		std::cout << n << std::endl;
@@ -67,6 +69,10 @@ struct ProblemMaker : public Problem<T>
 	: Problem<T>(forward<T>(root)), mGoal(forward<T>(goal)), mGenerator(gen)
 	{ }
 
+	ProblemMaker(typename Problem<T>::node_ptr node, T goal, const G &gen )
+	: Problem<T>(move(node)), mGoal(forward<T>(goal)), mGenerator(gen)
+	{ }
+
   	bool isGoal (const T & value) const override {
 		if ( value == mGoal )
 			return true;
@@ -84,19 +90,37 @@ private:
 	const G &mGenerator;
 };
 
+template<typename T>
+struct DefaultExpander
+{
+	typename Problem<T>::leafs_list 
+	operator()(const typename Problem<T>::node_ptr &state) const 
+	{ return state->expand(); }
+};
+
 }
 
 using namespace Private;
 
+
 template <typename T, typename G>
-ProblemMaker<T,G> makeProblem(T root, T goal, G gen)
+ProblemMaker<T,G> makeProblem(T root, T goal, G gen )
 {
-	return ProblemMaker<T,G>(root, goal, gen);
+	return ProblemMaker<T,G>(forward<T>(root), forward<T>(goal), gen);
 }
 
-#define MAKE_PROBLEM(ROOT, GOAL, STATE, GEN) makeProblem(ROOT, GOAL, [&]( \
-			const Node<decltype(ROOT)>::node_ptr & STATE) { \
-				typename Problem<decltype(ROOT)>::leafs_list GEN;
+template <typename T, typename G = DefaultExpander<T>>
+ProblemMaker<T,G> makeProblem(const typename Problem<T>::node_ptr &graph, T goal)
+{
+	G gen;
+	return ProblemMaker<T,G>(graph, forward<T>(goal), gen);
+}
+
+
+#define MAKE_PROBLEM(ROOT, GOAL, NODE, STATE, GEN) makeProblem(ROOT, GOAL, [&]( \
+			const Node<decltype(ROOT)>::node_ptr & NODE) { \
+		typename Problem<decltype(ROOT)>::leafs_list GEN; \
+		auto STATE = NODE ->getState();
 
 #define END_PROBLEM })
 
