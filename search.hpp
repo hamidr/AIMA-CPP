@@ -7,6 +7,7 @@
 #include <stack>
 #include <memory>
 #include <iostream>
+#include <queue>
 
 #include "problem.hpp"
 
@@ -19,6 +20,7 @@ namespace Private
 using std::set;
 using std::stack;
 using std::deque;
+using std::priority_queue;
 
 template <typename T>
 struct MyQueue : public deque<T>
@@ -69,18 +71,17 @@ E treeSearch(C fringe, const P &problem)
 	return problem.initial();
 }
 
-
 template<typename T>
 struct NodePtrCompare : public std::less<T>
 {
 	bool operator()(const T &t1, const T &t2)
-	{ return t1->getState() < t2->getState(); }
+	{ return t1->getState() > t2->getState(); }
 };
 
-template < typename C, typename P, typename E = typename C::value_type >
+template < typename C, typename P, typename E = typename C::value_type, typename Compair = NodePtrCompare<E> >
 E graphSearch(C fringe, const P &problem)
 {
-	set<E, NodePtrCompare<E>> explored;
+	set<E, Compair> explored;
 
 	fringe.push(problem.initial());
 	while(! fringe.empty())
@@ -129,6 +130,29 @@ R BFGS(P p)
 {
 	return graphSearch(MyQueue<R>(), p );
 }
+
+template < 	typename T,
+		 	typename Compare = NodePtrCompare<T>,
+			typename Parent =  priority_queue<T, typename priority_queue<T>::container_type, Compare> >
+struct MyPriorityQueue : public Parent 
+{
+	using typename Parent::priority_queue;
+
+	T pop()
+	{
+		T val = this->top();
+		Parent::pop();
+		return val;
+	}
+};
+
+
+template <typename P, typename R = typename P::node_ptr>
+R WTH(P p)
+{
+	return graphSearch(MyPriorityQueue<R>(), p );
+}
+
 
 }
 #endif
