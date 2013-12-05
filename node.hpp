@@ -83,6 +83,15 @@ R makeNode(T value, const R &p)
 	return make_shared<E>(forward<T>(value), p);
 }
 
+template<typename T, typename Functor>
+void mapToRoot(const shared_ptr<Node<T>> &node, Functor f)
+{
+	if ( !node ) 
+		return;
+
+	f( node->getState() );
+	mapToRoot( node->getParent(), f );
+}
 
 }
 
