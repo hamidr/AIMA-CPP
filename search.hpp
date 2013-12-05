@@ -8,60 +8,10 @@
 #include <memory>
 #include <iostream>
 
-#include "node.hpp"
+#include "problem.hpp"
 
 namespace AI 
 {
-
-using std::shared_ptr;
-using std::make_shared;
-
-template <typename T>
-struct Problem
-{
-	using state_type = T;
-	using node_type = Node<state_type>;
-	using node_ptr = typename node_type::node_ptr;
-	using leafs_list = typename node_type::leafs_list;
-
-	Problem(const Problem&) = delete;
-	Problem(Problem&&) = default;
-
-	Problem(T head)
-	: mTree(make_shared<node_type>(head)) 
-	{ }
-
-	inline node_type & getRoot() const
-	{ return *mTree; }
-
-	inline node_ptr initial() const 
-	{ return mTree->shared_from_this(); }
-
-	bool testGoal(const node_ptr &node) const 
-	{
-		T && val = node->getState();
-		this->watch(val);
-		return this->isGoal(val);
-	}
-
-	virtual bool isGoal(const T &value) const = 0;
-
-	virtual leafs_list successors( node_ptr &state) const
-	{ return state->expand(); }
-
-	virtual void pathCost(const node_ptr &state1) const {} 
-
-	virtual void watch(const T & n) const {
-		std::cout << n << std::endl;
-	}
-
-protected:
-	using daddy_type = Problem<T>;
-
-private:
-	const node_ptr mTree;
-};
-
 
 namespace Private 
 {
@@ -106,7 +56,7 @@ E treeSearch(C fringe, const P &problem)
 	fringe.push(problem.initial());
 	while(! fringe.empty())
 	{
-		E node(fringe.pop());
+		E node = fringe.pop();
 
 		if ( problem.testGoal(node) )
 			return node;
@@ -143,8 +93,8 @@ E graphSearch(C fringe, const P &problem)
 		if ( problem.testGoal(node) )
 			return node;
 
-		auto &&nodes = problem.successors(node);
-		for( const E e : nodes)
+		auto nodes = problem.successors(node);
+		for( const E &e : nodes)
 			fringe.push(e);
 	}
 
@@ -154,6 +104,7 @@ E graphSearch(C fringe, const P &problem)
 }
 
 using namespace Private;
+
 
 template <typename P, typename R = typename P::node_ptr>
 R BFTS(P p)
