@@ -53,9 +53,11 @@ struct MyStack : public stack<T>
 
 
 template < typename C, typename P, typename E = typename C::value_type  >
-E treeSearch(C fringe, const P &problem)
+E treeSearch(const P &problem)
 {
+    C fringe;
     fringe.push(problem.initial());
+
     while(! fringe.empty())
     {
         E node = fringe.pop();
@@ -78,10 +80,11 @@ struct NodePtrCompare : public std::less<T>
     { return t1->getState() > t2->getState(); }
 };
 
-template < typename C, typename P, typename E = typename C::value_type, typename Compair = NodePtrCompare<E> >
-E graphSearch(C fringe, const P &problem)
+template < typename C, typename P, typename E = typename C::value_type, typename Compare = NodePtrCompare<E> >
+E graphSearch(const P &problem)
 {
-    set<E, Compair> explored;
+    C fringe;
+    set<E, Compare> explored;
 
     fringe.push(problem.initial());
     while(! fringe.empty())
@@ -126,31 +129,31 @@ using namespace Private;
 template <typename P, typename R = typename P::node_ptr>
 R BFTS(P p)
 {
-    return treeSearch(MyQueue<R>(), p );
+    return treeSearch<MyQueue<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
 R DFTS(P p)
 {
-    return treeSearch(MyStack<R>(), p );
+    return treeSearch<MyStack<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
 R DFGS(P p)
 {
-    return graphSearch(MyStack<R>(), p);
+    return graphSearch<MyStack<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
 R BFGS(P p)
 {
-    return graphSearch(MyQueue<R>(), p );
+    return graphSearch<MyQueue<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
 R WTH(P p)
 {
-    return graphSearch(MyPriorityQueue<R>(), p );
+    return graphSearch<MyPriorityQueue<R>>( p );
 }
 
 
