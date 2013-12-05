@@ -12,16 +12,36 @@ using namespace AI;
 struct IntProblem : public Problem<int>
 {
   	IntProblem()
-	: Problem(0) 
+	: Problem(10) 
 	{
-		getRoot().addLeaf(1).addLeaf(2).addLeaf(3);
-		getRoot().addLeaf(4);
-		getRoot().addLeaf(getRoot());
+		auto &_40 = getRoot().addLeaf(40);
+		_40.addLeaf(22);
+		_40.addLeaf(23);
+		auto &_12 = getRoot().addLeaf(12);
+		_12.addLeaf(6);
+		_12.addLeaf(8).addLeaf(7);
+		_12.addLeaf(20);
+		auto &_11 = getRoot().addLeaf(11);
+		_11.addLeaf(9);
+		_11.addLeaf(25).addLeaf(26);
+
+
+		/* 
+		 * 			  ___10__
+		 * 			/	 |   \ 
+		 * 		  40    12_   11 ___
+		 * 		/ |    / | \    \  \
+		 * 	 22  23   6  8  20   9  25
+		 *				 |           |
+		 *				 7           26
+		 *
+		 * */
+
 	}
 
 
   	bool isGoal (const int & value) const override {
-		if ( value == 3 )
+		if ( value == 7 )
 			return true;
 		return false;
 	}
@@ -83,7 +103,7 @@ struct AlphabetProblem : public Problem<char>
 	}
 
   	bool isGoal (const char & n) const override {
-		if ( n == 'H' )
+		if ( n == 'M' )
 			return true;
 		return false;
 	}
