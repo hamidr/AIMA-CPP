@@ -8,8 +8,7 @@
 
 using namespace AI;
 
-
-struct IntProblem : public Problem<int>
+DefClassProblem(IntProblem, int)
 {
     IntProblem()
     : Problem(10) 
@@ -39,21 +38,20 @@ struct IntProblem : public Problem<int>
 
     }
 
-
-    bool isGoal (const int & value) const override {
+    bool isGoal (const int & value) const {
         if ( value == 7 )
             return true;
         return false;
     }
 };
 
-struct TestProblem : public Problem<int>
+DefClassProblem(TestProblem, int)
 {
     TestProblem()
     : Problem(0)
-    {}
+    { }
 
-    virtual leafs_list successors( const node_ptr &state) const override 
+    leafs_list successors( const node_ptr &state) const
     {
         leafs_list eles;
 
@@ -73,14 +71,14 @@ struct TestProblem : public Problem<int>
 
     }
 
-    bool isGoal (const int & value) const override {
+    bool isGoal (const int & value) const {
         if( value == 104 )
             return true;
         return false;
     }
 };
 
-struct AlphabetProblem : public Problem<char>
+DefClassProblem(AlphabetProblem, char)
 {
     AlphabetProblem()
     : Problem('A') 
@@ -102,11 +100,12 @@ struct AlphabetProblem : public Problem<char>
                 auto &o = g.addLeaf('O');
     }
 
-    bool isGoal (const char & n) const override {
+    bool isGoal (const char & n) const {
         if ( n == 'M' )
             return true;
         return false;
     }
 };
+
 
 #endif

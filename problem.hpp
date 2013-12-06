@@ -9,8 +9,9 @@ namespace AI
 using std::shared_ptr;
 using std::make_shared;
 
-template <typename T>
-struct Problem
+
+template <typename T, typename Impl>
+struct Problem 
 {
     using state_type = T;
     using node_type = Node<state_type>;
@@ -37,53 +38,51 @@ struct Problem
     bool testGoal(const node_ptr &node) const 
     {
         T && val = node->getState();
-        this->watch(val);
-        return this->isGoal(val);
+        getImpl().watch(val);
+        return getImpl().isGoal(val);
     }
 
-    virtual bool isGoal(const T &value) const = 0;
-
-    virtual leafs_list successors( const node_ptr &state) const
+    leafs_list successors( const node_ptr &state) const
     { return state->expand(); }
 
-    virtual void watch(const T & n) const {
-        std::cout << n << std::endl;
-    }
-
-protected:
-    using daddy_type = Problem<T>;
+    void watch(const T &state) const
+    { std::cout << state << std::endl; }
 
 private:
+    const Impl &getImpl() const
+    { return *static_cast<const Impl*>(this); }
+
     const node_ptr mTree;
 };
+
 
 
 namespace Private 
 {
 
 template<typename T, typename G >
-struct ProblemMaker : public Problem<T>
+struct ProblemMaker : public Problem<T, ProblemMaker<T,G>>
 {
 
+    using daddy_type = Problem<T, ProblemMaker<T,G>>;
     ProblemMaker(T root, T goal, const G &gen )
-    : Problem<T>(forward<T>(root)), mGoal(forward<T>(goal)), mGenerator(gen)
+    : daddy_type(forward<T>(root)), mGoal(forward<T>(goal)), mGenerator(gen)
     { }
 
-    ProblemMaker(typename Problem<T>::node_ptr node, T goal, const G &gen )
-    : Problem<T>(move(node)), mGoal(forward<T>(goal)), mGenerator(gen)
+    ProblemMaker(typename daddy_type::node_ptr node, T goal, const G &gen )
+    : daddy_type(move(node)), mGoal(forward<T>(goal)), mGenerator(gen)
     { }
 
-    bool isGoal (const T & value) const override {
+    bool isGoal (const T & value) const {
         if ( value == mGoal )
             return true;
         return false;
     }
 
-    virtual typename Problem<T>::leafs_list 
-    successors(const typename Problem<T>::node_ptr &state) const override 
-    {
-        return mGenerator(state);
-    }
+    typename Node<T>::leafs_list 
+    successors(const typename daddy_type::node_ptr &state) const 
+    { return mGenerator(state); }
+
 
 private:
     const T mGoal;
@@ -93,8 +92,8 @@ private:
 template<typename T>
 struct DefaultExpander
 {
-    typename Problem<T>::leafs_list 
-    operator()(const typename Problem<T>::node_ptr &state) const 
+    typename Node<T>::leafs_list 
+    operator()(const typename Node<T>::node_ptr &state) const 
     { return state->expand(); }
 };
 
@@ -110,7 +109,7 @@ ProblemMaker<T,G> makeProblem(T root, T goal, G gen )
 }
 
 template <typename T, typename G = DefaultExpander<T>>
-ProblemMaker<T,G> makeProblem(const typename Problem<T>::node_ptr &graph, T goal)
+ProblemMaker<T,G> makeProblem(const typename Node<T>::node_ptr &graph, T goal)
 {
     G gen;
     return ProblemMaker<T,G>(graph, forward<T>(goal), gen);
@@ -119,11 +118,12 @@ ProblemMaker<T,G> makeProblem(const typename Problem<T>::node_ptr &graph, T goal
 
 #define MAKE_PROBLEM(ROOT, GOAL, NODE, STATE, GEN) makeProblem(ROOT, GOAL, [&]( \
             const Node<decltype(ROOT)>::node_ptr & NODE) { \
-        typename Problem<decltype(ROOT)>::leafs_list GEN; \
+        typename Node<decltype(ROOT)>::leafs_list GEN; \
         auto STATE = NODE ->getState();
 
 #define END_PROBLEM })
 
+#define DefClassProblem(name, type) struct name : public Problem<type, name>
 
 }
 

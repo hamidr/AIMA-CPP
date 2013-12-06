@@ -84,14 +84,15 @@ template < typename C, typename P, typename E = typename C::value_type, typename
 E graphSearch(const P &problem)
 {
     C fringe;
+    fringe.push(problem.initial());
+
     set<E, Compare> explored;
 
-    fringe.push(problem.initial());
     while(! fringe.empty())
     {
         E node = fringe.pop();
 
-        if (explored.insert(node).second == false)
+        if ( explored.insert(node).second == false )
             continue;
 
         if ( problem.testGoal(node) )
@@ -120,11 +121,9 @@ struct MyPriorityQueue : public Parent
     }
 };
 
-
 }
 
 using namespace Private;
-
 
 template <typename P, typename R = typename P::node_ptr>
 R BFTS(P p)
@@ -156,6 +155,6 @@ R WTH(P p)
     return graphSearch<MyPriorityQueue<R>>( p );
 }
 
-
 }
+
 #endif

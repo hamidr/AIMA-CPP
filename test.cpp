@@ -3,6 +3,7 @@
 
 int main()
 {
+
         auto _10 = makeNode(10);
         auto &_40 = _10->addLeaf(40);
         _40.addLeaf(22);
@@ -15,9 +16,10 @@ int main()
         _11.addLeaf(9);
         _11.addLeaf(25).addLeaf(26);
 
-        auto foo = WTH( makeProblem(_10, 9) );
+        auto foo = WTH( makeProblem(_10, 7) );
 
 
+/*
     auto bar =
         WTH(
             MAKE_PROBLEM (1, 14, node, state, eles)
@@ -36,17 +38,17 @@ int main()
 
 
 
-/*
-    auto bar = WTH(IntProblem());
-*/
-    //BFTS(IntProblem());
-    //DFGS(AlphabetProblem());
-    //
-
-//  auto bar = WTH(AlphabetProblem());
-
+    BFTS(IntProblem());
+    auto ar = WTH(IntProblem());
+    DFGS(AlphabetProblem());
     
-    mapToRoot(bar, [](const int &n) { std::cout << " -> " << n; });
+
+    WTH(AlphabetProblem());
+
+    auto bar = WTH(AlphabetProblem());
+*/
+    
+    mapToRoot(foo, [](const int &n) { std::cout << " -> " << n; });
 
     std::cout << std::endl;
 
