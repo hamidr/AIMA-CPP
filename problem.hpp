@@ -9,6 +9,21 @@ namespace AI
 using std::shared_ptr;
 using std::make_shared;
 
+template<typename T>
+struct DefaultExpander
+{
+    typename Node<T>::leafs_list 
+    operator()(const typename Node<T>::node_ptr &state) const 
+    {   
+        auto lfs = state->expand();
+        decltype(lfs) leafs;
+
+        for (const auto &n : lfs) 
+            leafs.push_back(makeNode<decltype(n->getState())>(n, state, n->pathCost() + state->pathCost()));
+
+        return leafs;
+    }
+};
 
 template <typename T, typename Impl>
 struct Problem 
@@ -42,8 +57,8 @@ struct Problem
         return getImpl().isGoal(val);
     }
 
-    leafs_list successors( const node_ptr &state) const
-    { return state->expand(); }
+    leafs_list successors(const node_ptr &state) const
+    { return DefaultExpander<T>()(state); }
 
     void watch(const T &state) const
     { std::cout << state << std::endl; }
@@ -89,13 +104,6 @@ private:
     const G &mGenerator;
 };
 
-template<typename T>
-struct DefaultExpander
-{
-    typename Node<T>::leafs_list 
-    operator()(const typename Node<T>::node_ptr &state) const 
-    { return state->expand(); }
-};
 
 }
 

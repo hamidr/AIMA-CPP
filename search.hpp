@@ -106,8 +106,26 @@ E graphSearch(const P &problem)
     return problem.initial();
 }
 
+
+template<typename T>
+struct NodeCostCompare : public std::less<T>
+{
+    long calcCostToParent(const T &n)
+    {
+        long cost = 0;
+        mapToRoot( n, [&](const T &node) {
+                cost = node->pathCost() + calcCostToParent(node->getParent());
+            });
+        return cost;
+    }
+
+    bool operator()(const T &t1, const T &t2)
+    { return t1->pathCost() > t2->pathCost(); }
+};
+
+
 template <typename T,
-         typename Compare = NodePtrCompare<T>,
+         typename Compare = NodeCostCompare<T>,
          typename Parent =  priority_queue<T, typename priority_queue<T>::container_type, Compare> >
 struct MyPriorityQueue : public Parent 
 {
@@ -150,9 +168,9 @@ R BFGS(P p)
 }
 
 template <typename P, typename R = typename P::node_ptr>
-R WTH(P p)
+R UCS(P p)
 {
-    return graphSearch<MyPriorityQueue<R>>( p );
+    return treeSearch<MyPriorityQueue<R>>( p );
 }
 
 }

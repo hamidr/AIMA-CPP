@@ -17,27 +17,30 @@ struct Node : public std::enable_shared_from_this<Node<T>>
 {
     using state_type = T;
     using node_type = Node<T>;
-    using node_type_ptr = node_type *;
     using node_ptr = std::shared_ptr<node_type>;
     using leafs_list = std::vector<node_ptr>;
 
-    Node(const node_type &) = delete;
-    Node(node_type &&) = delete;
+
+    template<typename... Args>
+    Node( const long &c, Args... args )
+    : Node(forward<Args>(args)...) 
+    { this->setPathCost(c); }
+
+    Node( const node_ptr &n, const node_ptr &p )
+    : mState(n->mState), mLeafs(n->mLeafs), mParent(p)
+    { }
 
     inline Node(T value) 
     : mState(forward<T>(value)) { }
 
     inline Node(T value, const node_ptr &parent) 
-    : mState(forward<T>(value)), mParent(parent->shared_from_this()) { }
+    : mState(forward<T>(value)), mParent(parent) { }
 
-    Node(const node_type &n, const node_type_ptr &p )
-    : Node(n.mState, n.mLeafs, p) { }
-
-    Node(node_type &&t, const node_type_ptr &p) 
+    Node(node_type &&t, node_type &p)
     : Node(move(t.mState), move(t.mLeafs), p) { }
 
     inline const node_ptr &getParent() const
-    { return mParent;  }
+    { return mParent; }
 
     inline T getState() const
     { return mState; }
@@ -45,19 +48,40 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     inline leafs_list expand() const 
     { return mLeafs; }
 
+    void setPathCost( const long &c )
+    { mCost = c; }
+
+    long pathCost() const
+    { return mCost; }
+
     inline node_type &addLeaf(T value)
-    { return this->addLeaf(make_shared<node_type>(forward<T>(value), this)); }
+    { return this->addLeaf(make_shared<node_type>(forward<T>(value), *this)); }
 
     inline node_type &addLeaf(node_type &&node) 
-    { return this->addLeaf(make_shared<node_type>(move(node), this)); }
+    { return this->addLeaf(make_shared<node_type>(move(node), *this)); }
 
-    inline node_type &addLeaf(const node_type &node)
-    { return this->addLeaf(make_shared<node_type>(node, this)); }
+    inline node_type &addLeaf( node_type &node)
+    { return this->addLeaf(node.shared_from_this()); }
 
+    template <typename K> 
+    inline node_type &addLeaf(K value, const long &cost)
+    { 
+        auto &ref = this->addLeaf(forward<K>(value));
+        ref.setPathCost(cost);
+        return ref;
+    }
+
+    template<typename N>
+    inline node_type &connect(N node, long cost )
+    {
+        auto &leaf = this->addLeaf(forward<N>(node), cost);
+        leaf.addLeaf(this->shared_from_this() , cost);
+        return leaf;
+    }
 
 private:
-    inline Node(T value, leafs_list leafs, const node_type_ptr &parent) 
-    : mState(forward<T>(value)), mLeafs(move(leafs)), mParent(parent->shared_from_this()) { }
+    inline Node(T value, leafs_list leafs, node_type &parent)
+    :  mState(forward<T>(value)), mLeafs(move(leafs)), mParent(parent.shared_from_this()) { }
     
     node_type &addLeaf(node_ptr &&nextLeaf ) {
         mLeafs.push_back(nextLeaf);
@@ -67,6 +91,7 @@ private:
 private:
     const T mState;
     const node_ptr mParent;
+    long mCost = 0;
 
     leafs_list mLeafs;
 };
@@ -78,10 +103,17 @@ R makeNode(T value)
 }
 
 template <typename T, typename E = Node<T>, typename R = shared_ptr<E> >
-R makeNode(T value, const R &p)
+R makeNode(T value, const R &p, long c = 0)
 {
-    return make_shared<E>(forward<T>(value), p);
+    return make_shared<E>(c, forward<T>(value), p);
 }
+
+template <typename T, typename E = Node<T>, typename R = shared_ptr<E> >
+R makeNode(const R& value, const R &p, long c = 0)
+{
+    return make_shared<E>(c, value, p);
+}
+
 
 template<typename T, typename Functor>
 void mapToRoot(const shared_ptr<Node<T>> &node, Functor f)
@@ -89,7 +121,7 @@ void mapToRoot(const shared_ptr<Node<T>> &node, Functor f)
     if ( !node ) 
         return;
 
-    f( node->getState() );
+    f( node );
     mapToRoot( node->getParent(), f );
 }
 
