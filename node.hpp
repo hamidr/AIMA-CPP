@@ -20,7 +20,6 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     using node_ptr = std::shared_ptr<node_type>;
     using leafs_list = std::vector<node_ptr>;
 
-
     template<typename... Args>
     Node( const long &c, Args... args )
     : Node(forward<Args>(args)...) 
@@ -30,8 +29,17 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     : mState(n->mState), mLeafs(n->mLeafs), mParent(p)
     { }
 
+    Node( const node_ptr &n )
+    : mState(n->mState), mLeafs(n->mLeafs)
+    { }
+    
+    Node( node_ptr &&n )
+    : mState(move(n->mState)), mLeafs(move(n->mLeafs))
+    { }
+
     inline Node(T value) 
-    : mState(forward<T>(value)) { }
+    : mState(forward<T>(value)) 
+    { }
 
     inline Node(T value, const node_ptr &parent) 
     : mState(forward<T>(value)), mParent(parent) { }
@@ -70,7 +78,7 @@ struct Node : public std::enable_shared_from_this<Node<T>>
         ref.setPathCost(cost);
         return ref;
     }
-
+ 
     template<typename N>
     inline node_type &connect(N node, long cost )
     {
@@ -78,6 +86,32 @@ struct Node : public std::enable_shared_from_this<Node<T>>
         leaf.addLeaf(this->shared_from_this() , cost);
         return leaf;
     }
+
+    template < typename... Leafs >
+    void connect(const std::pair<node_ptr, long> &leaf, Leafs... ls)
+    { 
+        this->connect(leaf);
+        this->connect(forward<Leafs>(ls)...);
+    }
+
+    void connect(const std::pair<node_ptr, long> &leaf)
+    {
+        this->mLeafs.push_back(make_shared<node_type>(leaf.second, leaf.first));
+        leaf.first->mLeafs.push_back(make_shared<node_type>(leaf.second, this->shared_from_this()));
+    }
+
+    int size() const { return mLeafs.size(); }
+
+    struct Maker {
+        inline node_ptr operator()(T t) const
+        { return make_shared<Node<T>>(forward<T>(t)); }
+    };
+
+    struct Edge {
+        inline std::pair<node_ptr, long> 
+        operator()(const node_ptr &node, const long &gnlength) const
+        { return make_pair(node, gnlength); }
+    };
 
 private:
     inline Node(T value, leafs_list leafs, node_type &parent)
