@@ -13,28 +13,28 @@ DefClassProblem(IntProblem, int)
     IntProblem()
     : Problem(10) 
     {
-        auto &_40 = getRoot().addLeaf(40);
+        auto &_40 = getRoot().addLeaf(40,50);
         _40.addLeaf(22);
         _40.addLeaf(23);
         auto &_12 = getRoot().addLeaf(12);
         _12.addLeaf(6);
-        _12.addLeaf(8).addLeaf(7);
+        _12.addLeaf(8).addLeaf(7,4);
         _12.addLeaf(20);
-        auto &_11 = getRoot().addLeaf(11);
+        auto &_11 = getRoot().addLeaf(11,12);
         _11.addLeaf(9);
         _11.addLeaf(25).addLeaf(26);
 
 
-        /* 
-         *            ___10__
-         *          /    |   \ 
-         *        40    12_   11 ___
-         *      / |    / | \    \  \
-         *   22  23   6  8  20   9  25
-         *               |           |
-         *               7           26
-         *
-         * */
+        //
+        //             ___10__
+        //           /    |   \ 
+        //         40    12_   11 ___
+        //       / |    / | \    \  \
+        //    22  23   6  8  20   9  25
+        //                |           |
+        //                7           26
+        // 
+        //  
 
     }
 
@@ -44,6 +44,8 @@ DefClassProblem(IntProblem, int)
         return false;
     }
 };
+
+
 
 DefClassProblem(TestProblem, int)
 {
@@ -65,7 +67,7 @@ DefClassProblem(TestProblem, int)
             
 
         for(int i = j; i < j+2; ++i)
-            eles.push_back(makeNode(state->getState()+i, state));
+            eles.push_back(makeNode(state->getState()+i, state, state->pathCost() + 1));
 
         return eles;
 
@@ -77,6 +79,7 @@ DefClassProblem(TestProblem, int)
         return false;
     }
 };
+
 
 DefClassProblem(AlphabetProblem, char)
 {
@@ -106,6 +109,5 @@ DefClassProblem(AlphabetProblem, char)
         return false;
     }
 };
-
 
 #endif

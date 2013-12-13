@@ -19,7 +19,7 @@ struct DefaultExpander
         decltype(lfs) leafs;
 
         for (const auto &n : lfs) 
-            leafs.push_back(makeNode<decltype(n->getState())>(n, state, n->pathCost() + state->pathCost()));
+            leafs.push_back(makeNode(n, state, n->pathCost() + state->pathCost()));
 
         return leafs;
     }
@@ -36,7 +36,7 @@ struct Problem
     Problem(const Problem&) = delete;
     Problem(Problem&&) = default;
 
-    Problem(node_ptr && head)
+    Problem(node_ptr head)
         : mTree(move(head)) 
     { }
 
@@ -53,15 +53,16 @@ struct Problem
     bool testGoal(const node_ptr &node) const 
     {
         T && val = node->getState();
-        getImpl().watch(val);
+        getImpl().watch(node);
         return getImpl().isGoal(val);
     }
 
+    
     leafs_list successors(const node_ptr &state) const
     { return DefaultExpander<T>()(state); }
 
-    void watch(const T &state) const
-    { std::cout << state << std::endl; }
+    void watch(const node_ptr &node) const
+    { std::cout << "Visited node \"" << node->getState() << "\" with cost of " << node->pathCost() << std::endl; }
 
 private:
     const Impl &getImpl() const
@@ -80,27 +81,33 @@ struct ProblemMaker : public Problem<T, ProblemMaker<T,G>>
 {
 
     using daddy_type = Problem<T, ProblemMaker<T,G>>;
+    using node_ptr = typename daddy_type::node_ptr;
+
     ProblemMaker(T root, T goal, const G &gen )
-    : daddy_type(forward<T>(root)), mGoal(forward<T>(goal)), mGenerator(gen)
+    : daddy_type(forward<T>(root)), mGoal(makeNode<T>(forward<T>(goal))), mGenerator(gen)
     { }
 
-    ProblemMaker(typename daddy_type::node_ptr node, T goal, const G &gen )
-    : daddy_type(move(node)), mGoal(forward<T>(goal)), mGenerator(gen)
+    ProblemMaker(node_ptr node, T goal, const G &gen )
+    : daddy_type(node), mGoal(makeNode<T>(forward<T>(goal))), mGenerator(gen)
+    { }
+
+    ProblemMaker(node_ptr node, node_ptr goal, const G &gen )
+    : daddy_type(node), mGoal(goal), mGenerator(gen)
     { }
 
     bool isGoal (const T & value) const {
-        if ( value == mGoal )
+        if ( value == mGoal->getState() )
             return true;
         return false;
     }
 
     typename Node<T>::leafs_list 
-    successors(const typename daddy_type::node_ptr &state) const 
+    successors(const node_ptr &state) const 
     { return mGenerator(state); }
 
 
 private:
-    const T mGoal;
+    const node_ptr mGoal;
     const G &mGenerator;
 };
 
@@ -116,11 +123,11 @@ ProblemMaker<T,G> makeProblem(T root, T goal, G gen )
     return ProblemMaker<T,G>(forward<T>(root), forward<T>(goal), gen);
 }
 
-template <typename T, typename G = DefaultExpander<T>>
-ProblemMaker<T,G> makeProblem(const typename Node<T>::node_ptr &graph, T goal)
+template <typename T, typename E = typename T::element_type::state_type , typename G = DefaultExpander<E>>
+ProblemMaker<E,G> makeProblem(const T &graph, const T &goal)
 {
     G gen;
-    return ProblemMaker<T,G>(graph, forward<T>(goal), gen);
+    return ProblemMaker<E,G>(graph, goal, gen);
 }
 
 
