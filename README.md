@@ -29,7 +29,7 @@ C++(1y) implementation of algorithms from Norvig And Russell's "Artificial Intel
     - The graph will get expanded only by the leafs of each state in the graph/tree.
 
   -  Inherit from Problem<T> :
-    - Override ```void watch(const T &state) const;``` to watch what state is getting tested.
+    - Override ```void watch(const node_ptr &state) const;``` to watch what state is getting tested.
     - Override ```bool isGoal(const T &state) const;``` to say which state is the goal of the problem.
     - Override ```leafs_list successors( const node_ptr &state) const;``` to generate/expand the successors of the current state.
 

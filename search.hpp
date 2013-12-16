@@ -108,24 +108,35 @@ E graphSearch(const P &problem)
 
 
 template<typename T>
-struct NodeCostCompare : public std::less<T>
+struct NodeAllCostCompare : public std::less<T>
 {
-    long calcCostToParent(const T &n)
-    {
-        long cost = 0;
-        mapToRoot( n, [&](const T &node) {
-                cost = node->pathCost() + calcCostToParent(node->getParent());
-            });
-        return cost;
-    }
-
     bool operator()(const T &t1, const T &t2)
-    { return t1->pathCost() > t2->pathCost(); }
+    { return costOfAll(t1) > costOfAll(t2); }
 };
 
+template<typename T>
+struct NodeGreedyCompare : public std::less<T>
+{
+    bool operator()(const T &t1, const T &t2)
+    { return g(t1) > g(t2); }
+};
+
+template<typename T>
+struct NodeHeuristicCompare : public std::less<T>
+{
+    bool operator()(const T &t1, const T &t2)
+    { return (h(t1) + g(t1)) > (h(t2) + g(t2)); }
+};
+
+template<typename T>
+struct NodeGreedyHeuristicCompare : public std::less<T>
+{
+    bool operator()(const T &t1, const T &t2)
+    { return h(t1) > h(t2); }
+};
 
 template <typename T,
-         typename Compare = NodeCostCompare<T>,
+         typename Compare,
          typename Parent =  priority_queue<T, typename priority_queue<T>::container_type, Compare> >
 struct MyPriorityQueue : public Parent 
 {
@@ -139,39 +150,102 @@ struct MyPriorityQueue : public Parent
     }
 };
 
+
+template <typename P, typename R = typename P::node_ptr>
+R recursiveDLS(const R &node, P &p, int &&limit)
+{
+    if ( p.testGoal(node) )
+        return node;
+    else if ( limit == 0 )
+        return p.initial();
+    else {
+        auto nodes = p.successors(node);
+        for ( const R &n : nodes ) {
+            auto result = recursiveDLS(n, p, limit - 1);
+            if ( result != p.initial() )
+                return result;
+        }
+    }
+    return p.initial();
+}
+
 }
 
 using namespace Private;
 
 template <typename P, typename R = typename P::node_ptr>
-R BFTS(P p)
+R breadthFirstTS(P p)
 {
     return treeSearch<MyQueue<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
-R DFTS(P p)
+R depthFirstTS(P p)
 {
     return treeSearch<MyStack<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
-R DFGS(P p)
+R depthFirstGS(P p)
 {
     return graphSearch<MyStack<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
-R BFGS(P p)
+R breadthFirstGS(P p)
 {
     return graphSearch<MyQueue<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
-R UCS(P p)
+R uniformCostTS(P p)
 {
-    return treeSearch<MyPriorityQueue<R>>( p );
+    return treeSearch<MyPriorityQueue<R, NodeAllCostCompare<R>>>( p );
 }
+
+template <typename P, typename R = typename P::node_ptr>
+R greedyGS(P p)
+{
+    return graphSearch<MyPriorityQueue<R, NodeGreedyCompare<R>>>( p );
+}
+
+template <typename P, typename R = typename P::node_ptr>
+R greedyBestFirstGS(P p)
+{
+    return graphSearch<MyPriorityQueue<R, NodeGreedyHeuristicCompare<R>>>( p );
+}
+
+template <typename P, typename F = typename P::NodeCompare, typename R = typename P::node_ptr>
+R bestFirstGS(P p)
+{
+    return graphSearch<MyPriorityQueue<R, F>>( p );
+}
+
+template <typename P, typename R = typename P::node_ptr>
+R aStarGS(P p)
+{
+    return bestFirstGS(forward<P>(p)); 
+}
+
+template <typename P, typename R = typename P::node_ptr>
+R depthLimitedSearch(P p, int limit)
+{
+    return recursiveDLS(p.initial(), p, move(limit));
+}
+
+template <typename P, typename R = typename P::node_ptr>
+R iterativeDeepeningSearch(P p, const int stop = 100)
+{
+    int i = 1;
+    while ( i != stop ) {
+        auto result = depthLimitedSearch(p, i++);
+        if ( result != p.initial() )
+            return result;
+    }
+
+    return p.initial();
+}
+
 
 }
 
