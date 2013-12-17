@@ -9,7 +9,7 @@ int main()
 
     std::cout << std::endl << "City problems: " << std::endl ;
 
-    auto romania = aStarGS(RomaniaCities());
+    auto romania = bestFirstGS(RomaniaCities());
     mapToRoot(romania, [](const Node<string>::node_ptr &n) { std::cout << " -> " << n->getState(); });
     std::cout << std::endl<< std::endl << "Int problem: " << std::endl ;
 

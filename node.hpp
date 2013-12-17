@@ -62,17 +62,17 @@ struct Node : public std::enable_shared_from_this<Node<T>>
      : d_this(make_shared<NodeData>(forward<T>(value))) 
     { }
 
-    inline Node(T value, const node_ptr &parent, const long &c ) 
-     : d_this(make_shared<NodeData>(forward<T>(value))), mParent(parent), mCost(c), mDepth(parent->mDepth + 1)
+    inline Node(T value, const node_ptr &p, const long &c ) 
+     : d_this(make_shared<NodeData>(forward<T>(value))), mParent(p), mCost(c), mDepth(p->depth() + 1)
     { }
 
     Node( const node_ptr &node, const node_ptr &p )
-     : Node(node, p, node->pathCost())
+     : Node(node, p, node->cost())
     { }
 
     template <typename N>
-    Node( N node, N p, const long &cost, long h = 0 )
-     : d_this(node->d_this), mParent(forward<N>(p)), mCost(cost), mDepth(p->depth() + 1), mHeuristicCost(move(h))
+    Node( N node, N p, const long &cost )
+     : d_this(node->d_this), mParent(forward<N>(p)), mCost(cost), mDepth(p->depth() + 1)
     { }
 
     inline const node_ptr &getParent() const
@@ -81,26 +81,14 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     inline T getState() const
     { return d_this->mState; }
 
-    inline leafs_list expand() 
-    { 
-        leafs_list leafs;
-        Maker makeLeaf;
-        for( auto &e : d_this->mEdges ) 
-            leafs.push_back(makeLeaf(e.first, this->shared_from_this(), e.second));
-        return leafs;
-    }
-
     auto edges() const
     { return make_pair(d_this->mEdges.begin(), d_this->mEdges.end()); }
 
-    long pathCost() const
+    long cost() const
     { return mCost; }
 
     long depth() const
     { return mDepth; }
-
-    long heuristicCost() const
-    { return mHeuristicCost; }
 
     template<typename K>
     node_type &connect1(K value, const long &cost = 1)
@@ -136,7 +124,6 @@ private:
     };
 
 private:
-    const long mHeuristicCost = 0;
     const long mCost = 0;
     const long mDepth = 0;
     const node_ptr mParent;
@@ -151,7 +138,8 @@ R makeNode(T value)
 }
 
 template <typename T, typename R>
-R makeNode(T node, R parent, const long &c = 1)
+typename std::enable_if<!std::is_same<R,T>::value, R>::type
+makeNode(T node, R parent, const long &c = 1)
 {
     return Node<T>::Maker::makeNode(forward<T>(node), forward<R>(parent), c);
 }
@@ -160,18 +148,6 @@ template <typename R, typename Node = typename R::element_type, typename... Rest
 R makeNode(R node, R parent, Rest...args )
 {
     return Node::Maker::makeNode(forward<R>(node), forward<R>(parent), forward<Rest>(args)...);
-}
-
-template <typename R, typename Node = typename R::element_type>
-long costOfAll(const R &node)
-{
-    long c = 0;
-    R p = node;
-    while (p) {
-        c += p->pathCost();
-        p = p->getParent();
-    }
-    return c;
 }
 
 template<typename T, typename Functor>
@@ -183,16 +159,6 @@ void mapToRoot(const shared_ptr<Node<T>> &node, Functor f)
     f( node );
     mapToRoot( node->getParent(), f );
 }
-
-template <typename R, typename Node = typename R::element_type>
-long g(const R &node)
-{ return node->pathCost(); }
-
-template <typename R, typename Node = typename R::element_type>
-long h(const R &node)
-{ return node->heuristicCost(); }
-
-
 
 }
 

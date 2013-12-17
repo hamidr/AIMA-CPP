@@ -108,35 +108,21 @@ E graphSearch(const P &problem)
 
 
 template<typename T>
-struct NodeAllCostCompare : public std::less<T>
+struct NodeCostCompare : public std::less<T>
 {
     bool operator()(const T &t1, const T &t2)
-    { return costOfAll(t1) > costOfAll(t2); }
+    { return t1->cost() > t2->cost(); }
 };
 
 template<typename T>
-struct NodeGreedyCompare : public std::less<T>
+struct NodeDepthCompare : public std::less<T>
 {
     bool operator()(const T &t1, const T &t2)
-    { return g(t1) > g(t2); }
-};
-
-template<typename T>
-struct NodeHeuristicCompare : public std::less<T>
-{
-    bool operator()(const T &t1, const T &t2)
-    { return (h(t1) + g(t1)) > (h(t2) + g(t2)); }
-};
-
-template<typename T>
-struct NodeGreedyHeuristicCompare : public std::less<T>
-{
-    bool operator()(const T &t1, const T &t2)
-    { return h(t1) > h(t2); }
+    { return t1->depth() > t2->depth(); }
 };
 
 template <typename T,
-         typename Compare,
+         typename Compare = NodeCostCompare<T>,
          typename Parent =  priority_queue<T, typename priority_queue<T>::container_type, Compare> >
 struct MyPriorityQueue : public Parent 
 {
@@ -198,34 +184,23 @@ R breadthFirstGS(P p)
 }
 
 template <typename P, typename R = typename P::node_ptr>
-R uniformCostTS(P p)
+R bestFirstTS(P p) 
 {
-    return treeSearch<MyPriorityQueue<R, NodeAllCostCompare<R>>>( p );
+    return treeSearch<MyPriorityQueue<R>>( p );
 }
 
 template <typename P, typename R = typename P::node_ptr>
-R greedyGS(P p)
+R bestFirstGS(P p) // abstract can be everything
 {
-    return graphSearch<MyPriorityQueue<R, NodeGreedyCompare<R>>>( p );
+    return graphSearch<MyPriorityQueue<R>>( p );
 }
 
-template <typename P, typename R = typename P::node_ptr>
-R greedyBestFirstGS(P p)
-{
-    return graphSearch<MyPriorityQueue<R, NodeGreedyHeuristicCompare<R>>>( p );
-}
-
-template <typename P, typename F = typename P::NodeCompare, typename R = typename P::node_ptr>
-R bestFirstGS(P p)
-{
-    return graphSearch<MyPriorityQueue<R, F>>( p );
-}
-
-template <typename P, typename R = typename P::node_ptr>
-R aStarGS(P p)
-{
-    return bestFirstGS(forward<P>(p)); 
-}
+ /*  Following search strategies are only different f(n) :
+  *  UCS:  parent's cost + g(n) 
+  *  greedy: g(n)
+  *  greedyBestFirst: h(n)
+  *  A* : h(n) + g(n)
+ */
 
 template <typename P, typename R = typename P::node_ptr>
 R depthLimitedSearch(P p, int limit)

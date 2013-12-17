@@ -41,6 +41,10 @@ DefClassProblem(IntProblem, int)
     bool isGoal (const int & value) const {
         return ( value == 7 );
     }
+    
+    long F(const node_ptr &n, const long &gn, const long &parent_cost) const 
+    { return parent_cost + gn; }
+
 };
 
 
@@ -69,11 +73,6 @@ DefClassProblem(TestProblem, int)
 
         return eles;
 
-    }
-
-    long f(const node_ptr &n) const
-    {
-        return n->depth();
     }
 
     bool isGoal (const int & value) const {
@@ -112,7 +111,6 @@ DefClassProblem(AlphabetProblem, char)
 #include <unordered_map>
 using std::unordered_map;
 
-#define DefConstructorProblem(p, initial) p() : Problem(initial)
 DefClassProblem(RomaniaCities, std::string)
 {
     DefConstructorProblem(RomaniaCities, "Arad")
@@ -174,27 +172,11 @@ DefClassProblem(RomaniaCities, std::string)
         hTable.emplace(zerind, 374);
     }
 
-    leafs_list successors(const node_ptr &state) const
-    { 
-        leafs_list leafs;
-        const auto edgeBoarder = state->edges();
-
-        for(auto itr = edgeBoarder.first; itr != edgeBoarder.second; ++itr)
-        {
-            const node_ptr &node = itr->first;
-            const long &cost = itr->second;
-
-            leafs.push_back(makeNode(node, state, cost, hTable.at(node)));
-        }
-
-        return leafs;
-    }
-
     bool isGoal (const std::string &city) const 
     { return city == "Bucharest"; }
 
-    static long F(const node_ptr &n) 
-    { return g(n) + h(n); }
+    long F(const node_ptr &n, const long &gn, const long &parent_cost) const 
+    { return gn + hTable.at(n); }
 
 
 private:

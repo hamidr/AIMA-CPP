@@ -9,13 +9,6 @@ namespace AI
 using std::shared_ptr;
 using std::make_shared;
 
-template<typename T>
-struct DefaultExpander
-{
-    typename Node<T>::leafs_list 
-    operator()(const typename Node<T>::node_ptr &state) const 
-    { return state->expand(); }
-};
 
 template <typename T, typename Impl>
 struct Problem 
@@ -47,28 +40,34 @@ struct Problem
     }
 
     leafs_list successors(const node_ptr &state) const
-    { return DefaultExpander<T>()(state); }
+    { 
+        leafs_list leafs;
+        const auto edgeBoarder = state->edges();
+
+        for(auto itr = edgeBoarder.first; itr != edgeBoarder.second; ++itr)
+        {
+            const node_ptr &node = itr->first;
+            const long &cost = itr->second;
+
+            leafs.push_back(makeNode(node, state, getImpl().F(node, cost, state->cost())));
+        }
+
+        return leafs;
+    }
 
     void watch(const node_ptr &node) const
     {
         std::cout << "Visited node \"" 
             << node->getState() 
             << "\" with cost of " 
-            << Impl::F(node) 
+            << node->cost()
             << " and depth of " 
             << node->depth() 
             << std::endl;
     }
 
-    static long F(const node_ptr &node) 
-    { return g(node); }
-
-    struct NodeCompare : std::less<T>
-    {
-        bool operator()(const node_ptr &n1, const node_ptr &n2) const
-        { return Impl::F(n1) > Impl::F(n2); }
-    };
-
+    long F(const node_ptr &n, const long &gn, const long &pcost) const 
+    { return gn; }
 
 private:
     const Impl &getImpl() const
@@ -126,7 +125,7 @@ ProblemMaker<T,G> makeProblem(T root, T goal, G gen )
     return ProblemMaker<T,G>(forward<T>(root), forward<T>(goal), gen);
 }
 
-template <typename T, typename E = typename T::element_type::state_type , typename G = DefaultExpander<E>>
+template <typename T, typename E = typename T::element_type::state_type , typename G >
 ProblemMaker<E,G> makeProblem(const T &graph, const T &goal)
 {
     G gen;
@@ -142,6 +141,7 @@ ProblemMaker<E,G> makeProblem(const T &graph, const T &goal)
 #define END_PROBLEM })
 
 #define DefClassProblem(name, type) struct name : public Problem<type, name>
+#define DefConstructorProblem(p, initial) p() : Problem(initial)
 
 }
 
