@@ -12,7 +12,6 @@ AIMA-CPP
 ### TODO
 
   - I'd like to write a little GUI (with Qt) to show how these algorithms work.
-  - Trying to compile everything on windows with VC++; I used almost no feature of c++1y so it's possible to port this to windows.
 
   - Currently I'm just implementing step by step while I read the book :)
 
@@ -45,8 +44,8 @@ AIMA-CPP
   Visited node "Pitesti" with cost of 197 and depth of 3
   Visited node "Bucharest" with cost of 101 and depth of 4
 
-  -> Bucharest -> Pitesti -> Rimnicu Vilcea -> Sibiu -> Arad
-    ```
+  Route to root: -> Bucharest -> Pitesti -> Rimnicu Vilcea -> Sibiu -> Arad
+  ```
   Take a look at Test.hpp and Test.cpp to see what I mean :P .
   There will be a separated directory for examples in close future.
 
