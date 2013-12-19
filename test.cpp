@@ -2,28 +2,23 @@
 #include "test.hpp"
 
 #include <string>
-using std::string;
 
 int main()
 {
 
-    std::cout << std::endl << "City problems: " << std::endl ;
+    cout << endl << "City problems: " << endl ;
+    auto romania = recursiveBestFirstSearch(RomaniaCities());
+    showRoute(romania);
 
-    auto romania = bestFirstGS(RomaniaCities());
-    mapToRoot(romania, [](const Node<string>::node_ptr &n) { std::cout << " -> " << n->getState(); });
-    std::cout << std::endl<< std::endl << "Int problem: " << std::endl ;
-
+    cout <<  endl << "Int problem: " << endl ;
     auto num = iterativeDeepeningSearch(IntProblem());
-    mapToRoot(num, [](const Node<int>::node_ptr &n) { std::cout << " -> " << n->getState(); });
+    showRoute(num);
 
-    std::cout << std::endl<< std::endl << "Alphabet problem: " << std::endl ;
-
+    cout <<  endl << "Alphabet problem: " << endl ;
     auto foundNum = breadthFirstGS(AlphabetProblem());
-    mapToRoot(foundNum, [](const Node<char>::node_ptr &n) { std::cout << " -> " << n->getState(); });
+    showRoute(foundNum);
 
-
-    std::cout << std::endl<< std::endl << "Made-up test problem using macro (Generating on the air):" << std::endl ;
-
+    cout <<  endl << "Made-up test problem using macro (Generating on the air):" << endl ;
     auto mac =
         depthLimitedSearch(
             MAKE_PROBLEM (1, 17, node, state, eles)
@@ -39,16 +34,17 @@ int main()
                 return eles;
             END_PROBLEM, 10
         );
+    showRoute(mac);
 
-    mapToRoot(mac, [](const Node<int>::node_ptr &n) { std::cout << " -> " << n->getState(); });
-
-    std::cout << std::endl << std::endl<< "Made-up test problem using class (Generating on the air):" << std::endl ;
-
+    cout << endl<< "Made-up test problem using class (Generating on the air):" << endl ;
     auto testNum = depthFirstGS(TestProblem());
-    mapToRoot(testNum, [](const Node<int>::node_ptr &n) { std::cout << " -> " << n->getState(); });
+    showRoute(testNum);
 
-    std::cout << std::endl;
+    cout << endl<< "Missionaries and cannibals problem:" << endl ;
+    auto resMCB = bestFirstGS(MiCaBo());
+    showRoute(resMCB);
 
+    cout << endl;
     return 0;
 }
 

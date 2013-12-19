@@ -9,6 +9,9 @@ namespace AI
 using std::shared_ptr;
 using std::make_shared;
 
+using std::cout;
+using std::endl;
+
 
 template <typename T, typename Impl>
 struct Problem 
@@ -57,13 +60,13 @@ struct Problem
 
     void watch(const node_ptr &node) const
     {
-        std::cout << "Visited node \"" 
+        cout << "Visited node \"" 
             << node->getState() 
             << "\" with cost of " 
             << node->cost()
             << " and depth of " 
             << node->depth() 
-            << std::endl;
+            << endl;
     }
 
     long F(const node_ptr &n, const long &gn, const long &pcost) const 
@@ -107,7 +110,6 @@ struct ProblemMaker : public Problem<T, ProblemMaker<T,G>>
     successors(const node_ptr &state) const 
     { return mGenerator(state); }
 
-
 private:
     const node_ptr mGoal;
     const G &mGenerator;
@@ -117,7 +119,6 @@ private:
 }
 
 using namespace Private;
-
 
 template <typename T, typename G>
 ProblemMaker<T,G> makeProblem(T root, T goal, G gen )

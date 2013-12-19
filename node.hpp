@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <memory>
-#include <unordered_map>
+#include <map>
+
+#include "common.hpp"
 
 namespace AI 
 {
@@ -12,7 +14,9 @@ using std::move;
 using std::forward;
 using std::make_shared;
 using std::shared_ptr;
-using std::unordered_map;
+using std::map;
+using Private::NodePtrCompare;
+
 
 template <typename T>
 struct Node : public std::enable_shared_from_this<Node<T>>
@@ -21,6 +25,7 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     using node_type = Node<T>;
     using node_ptr = std::shared_ptr<node_type>;
     using leafs_list = std::vector<node_ptr>;
+    typedef map<node_ptr, long, NodePtrCompare<node_ptr>> nodeptr_cost_map ;
 
     struct Maker {
         template<typename... Args>
@@ -75,7 +80,7 @@ struct Node : public std::enable_shared_from_this<Node<T>>
      : d_this(node->d_this), mParent(forward<N>(p)), mCost(cost), mDepth(p->depth() + 1)
     { }
 
-    inline const node_ptr &getParent() const
+    inline const node_ptr &parent() const
     { return mParent; }
 
     inline T getState() const
@@ -84,8 +89,23 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     auto edges() const
     { return make_pair(d_this->mEdges.begin(), d_this->mEdges.end()); }
 
+    void setCost(const long &f)
+    { mCost = f; }
+
     long cost() const
     { return mCost; }
+
+    long g()
+    { 
+        if (!mParent)
+            return 0;
+        try {
+            return mParent->d_this->mEdges.at(this->shared_from_this());
+        } catch (const std::out_of_range &ex) { 
+            cout << "sorry! at "<< __func__ << "(n)" << endl; 
+            exit(1);
+        }
+    }
 
     long depth() const
     { return mDepth; }
@@ -120,11 +140,11 @@ private:
             : mState(forward<T>(state)) {}
 
         const T mState;
-        unordered_map<node_ptr, long> mEdges;
+        nodeptr_cost_map mEdges;
     };
 
 private:
-    const long mCost = 0;
+    long mCost = 0;
     const long mDepth = 0;
     const node_ptr mParent;
     const shared_ptr<NodeData> d_this;
@@ -150,16 +170,8 @@ R makeNode(R node, R parent, Rest...args )
     return Node::Maker::makeNode(forward<R>(node), forward<R>(parent), forward<Rest>(args)...);
 }
 
-template<typename T, typename Functor>
-void mapToRoot(const shared_ptr<Node<T>> &node, Functor f)
-{
-    if ( !node ) 
-        return;
-
-    f( node );
-    mapToRoot( node->getParent(), f );
 }
 
-}
+
 
 #endif

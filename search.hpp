@@ -8,6 +8,9 @@
 #include <memory>
 #include <iostream>
 #include <queue>
+#include <limits>
+#include <algorithm>
+
 
 #include "problem.hpp"
 
@@ -21,6 +24,10 @@ using std::set;
 using std::stack;
 using std::deque;
 using std::priority_queue;
+using std::sort;
+using std::min;
+using std::max;
+using std::less;
 
 template <typename T>
 struct MyQueue : public deque<T>
@@ -73,13 +80,6 @@ E treeSearch(const P &problem)
     return problem.initial();
 }
 
-template<typename T>
-struct NodePtrCompare : public std::less<T>
-{
-    bool operator()(const T &t1, const T &t2)
-    { return t1->getState() > t2->getState(); }
-};
-
 template < typename C, typename P, typename E = typename C::value_type, typename Compare = NodePtrCompare<E> >
 E graphSearch(const P &problem)
 {
@@ -108,14 +108,14 @@ E graphSearch(const P &problem)
 
 
 template<typename T>
-struct NodeCostCompare : public std::less<T>
+struct NodeCostCompare : public less<T>
 {
     bool operator()(const T &t1, const T &t2)
     { return t1->cost() > t2->cost(); }
 };
 
 template<typename T>
-struct NodeDepthCompare : public std::less<T>
+struct NodeDepthCompare : public less<T>
 {
     bool operator()(const T &t1, const T &t2)
     { return t1->depth() > t2->depth(); }
@@ -153,6 +153,35 @@ R recursiveDLS(const R &node, P &p, int &&limit)
         }
     }
     return p.initial();
+}
+
+template <typename P, typename R = typename P::node_ptr>
+R RBFS(const R &node, P &p, long limit)
+{
+    if ( p.testGoal(node) )
+        return node;
+
+    auto nodes = p.successors(node);
+    if ( !nodes.size() )
+        return p.initial();
+
+    for( const auto &s : nodes ) 
+        s->setCost(max(s->g() + p.H(s), node->cost()));
+
+    while ( true )
+    {
+        sort(nodes.begin(), nodes.end(), [](const R& n1, const R &n2) { return n1->cost() < n2->cost(); });
+
+        auto best = nodes.at(0);
+        if ( best->cost() > limit )
+            return p.initial();
+
+        auto alternative = nodes.at(1);
+
+        auto result = RBFS(best, p, min<long>(limit, alternative->cost()));
+        if ( result != p.initial() )
+            return result;
+    }
 }
 
 }
@@ -195,7 +224,7 @@ R bestFirstGS(P p) // abstract can be everything
     return graphSearch<MyPriorityQueue<R>>( p );
 }
 
- /*  Following search strategies are only different f(n) :
+ /*  Following search strategies have only different f(n) :
   *  UCS:  parent's cost + g(n) 
   *  greedy: g(n)
   *  greedyBestFirst: h(n)
@@ -221,6 +250,11 @@ R iterativeDeepeningSearch(P p, const int stop = 100)
     return p.initial();
 }
 
+template <typename P, typename R = typename P::node_ptr>
+R recursiveBestFirstSearch(P p)
+{
+    return RBFS(p.initial(), p, std::numeric_limits<long>::max());
+}
 
 }
 
