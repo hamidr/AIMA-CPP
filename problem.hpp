@@ -9,21 +9,9 @@ namespace AI
 using std::shared_ptr;
 using std::make_shared;
 
-template<typename T>
-struct DefaultExpander
-{
-    typename Node<T>::leafs_list 
-    operator()(const typename Node<T>::node_ptr &state) const 
-    {   
-        auto lfs = state->expand();
-        decltype(lfs) leafs;
+using std::cout;
+using std::endl;
 
-        for (const auto &n : lfs) 
-            leafs.push_back(makeNode(n, state, n->pathCost() + state->pathCost()));
-
-        return leafs;
-    }
-};
 
 template <typename T, typename Impl>
 struct Problem 
@@ -32,9 +20,6 @@ struct Problem
     using node_type = Node<state_type>;
     using node_ptr = typename node_type::node_ptr;
     using leafs_list = typename node_type::leafs_list;
-
-    Problem(const Problem&) = delete;
-    Problem(Problem&&) = default;
 
     Problem(node_ptr head)
         : mTree(move(head)) 
@@ -48,7 +33,7 @@ struct Problem
     { return *mTree; }
 
     inline node_ptr initial() const 
-    { return mTree->shared_from_this(); }
+    { return mTree; }
 
     bool testGoal(const node_ptr &node) const 
     {
@@ -57,12 +42,35 @@ struct Problem
         return getImpl().isGoal(val);
     }
 
-    
     leafs_list successors(const node_ptr &state) const
-    { return DefaultExpander<T>()(state); }
+    { 
+        leafs_list leafs;
+        const auto edgeBoarder = state->edges();
+
+        for(auto itr = edgeBoarder.first; itr != edgeBoarder.second; ++itr)
+        {
+            const node_ptr &node = itr->first;
+            const long &cost = itr->second;
+
+            leafs.push_back(makeNode(node, state, getImpl().F(node, cost, state->cost())));
+        }
+
+        return leafs;
+    }
 
     void watch(const node_ptr &node) const
-    { std::cout << "Visited node \"" << node->getState() << "\" with cost of " << node->pathCost() << std::endl; }
+    {
+        cout << "Visited node \"" 
+            << node->getState() 
+            << "\" with cost of " 
+            << node->cost()
+            << " and depth of " 
+            << node->depth() 
+            << endl;
+    }
+
+    long F(const node_ptr &n, const long &gn, const long &pcost) const 
+    { return gn; }
 
 private:
     const Impl &getImpl() const
@@ -87,7 +95,7 @@ struct ProblemMaker : public Problem<T, ProblemMaker<T,G>>
     : daddy_type(forward<T>(root)), mGoal(makeNode<T>(forward<T>(goal))), mGenerator(gen)
     { }
 
-    ProblemMaker(node_ptr node, T goal, const G &gen )
+    ProblemMaker(const node_ptr &node, T goal, const G &gen )
     : daddy_type(node), mGoal(makeNode<T>(forward<T>(goal))), mGenerator(gen)
     { }
 
@@ -95,16 +103,12 @@ struct ProblemMaker : public Problem<T, ProblemMaker<T,G>>
     : daddy_type(node), mGoal(goal), mGenerator(gen)
     { }
 
-    bool isGoal (const T & value) const {
-        if ( value == mGoal->getState() )
-            return true;
-        return false;
-    }
+    bool isGoal (const T & value) const 
+    { return value == mGoal->getState(); }
 
     typename Node<T>::leafs_list 
     successors(const node_ptr &state) const 
     { return mGenerator(state); }
-
 
 private:
     const node_ptr mGoal;
@@ -116,14 +120,13 @@ private:
 
 using namespace Private;
 
-
 template <typename T, typename G>
 ProblemMaker<T,G> makeProblem(T root, T goal, G gen )
 {
     return ProblemMaker<T,G>(forward<T>(root), forward<T>(goal), gen);
 }
 
-template <typename T, typename E = typename T::element_type::state_type , typename G = DefaultExpander<E>>
+template <typename T, typename E = typename T::element_type::state_type , typename G >
 ProblemMaker<E,G> makeProblem(const T &graph, const T &goal)
 {
     G gen;
@@ -139,6 +142,7 @@ ProblemMaker<E,G> makeProblem(const T &graph, const T &goal)
 #define END_PROBLEM })
 
 #define DefClassProblem(name, type) struct name : public Problem<type, name>
+#define DefConstructorProblem(p, initial) p() : Problem(initial)
 
 }
 

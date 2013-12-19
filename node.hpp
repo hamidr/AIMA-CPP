@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <memory>
-#include <unordered_map>
+#include <map>
+
+#include "common.hpp"
 
 namespace AI 
 {
@@ -12,7 +14,9 @@ using std::move;
 using std::forward;
 using std::make_shared;
 using std::shared_ptr;
-using std::unordered_map;
+using std::map;
+using Private::NodePtrCompare;
+
 
 template <typename T>
 struct Node : public std::enable_shared_from_this<Node<T>>
@@ -21,6 +25,7 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     using node_type = Node<T>;
     using node_ptr = std::shared_ptr<node_type>;
     using leafs_list = std::vector<node_ptr>;
+    typedef map<node_ptr, long, NodePtrCompare<node_ptr>> nodeptr_cost_map ;
 
     struct Maker {
         template<typename... Args>
@@ -58,51 +63,55 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     };
 
 
-    template<typename... Args>
-    Node( const long &c, Args... args )
-    : Node(forward<Args>(args)...) 
-    { this->setPathCost(c); }
+    inline Node(T value) 
+     : d_this(make_shared<NodeData>(forward<T>(value))) 
+    { }
+
+    inline Node(T value, const node_ptr &p, const long &c ) 
+     : d_this(make_shared<NodeData>(forward<T>(value))), mParent(p), mCost(c), mDepth(p->depth() + 1)
+    { }
 
     Node( const node_ptr &node, const node_ptr &p )
-        : d_this(node->d_this), mParent(p)
+     : Node(node, p, node->cost())
     { }
 
-    inline Node(T value) 
-    : d_this(make_shared<NodeData>(forward<T>(value))) 
+    template <typename N>
+    Node( N node, N p, const long &cost )
+     : d_this(node->d_this), mParent(forward<N>(p)), mCost(cost), mDepth(p->depth() + 1)
     { }
 
-    inline Node(T value, const node_ptr &parent) 
-    : d_this(make_shared<NodeData>(forward<T>(value))), mParent(parent) 
-    { }
-
-    Node(node_type &&t, node_type &p)
-    : d_this(move(t.d_this)), mParent(p)
-    { }
-
-    inline const node_ptr &getParent() const
+    inline const node_ptr &parent() const
     { return mParent; }
 
     inline T getState() const
     { return d_this->mState; }
 
-    inline leafs_list expand() const 
-    { 
-        leafs_list leafs;
-        for( auto &e : d_this->mEdges ) {
-            e.first->setPathCost(e.second);
-            leafs.push_back(e.first);
-        }
-        return leafs;
-    }
+    auto edges() const
+    { return make_pair(d_this->mEdges.begin(), d_this->mEdges.end()); }
 
-    void setPathCost( const long &c )
-    { mCost = c; }
+    void setCost(const long &f)
+    { mCost = f; }
 
-    long pathCost() const
+    long cost() const
     { return mCost; }
 
+    long g()
+    { 
+        if (!mParent)
+            return 0;
+        try {
+            return mParent->d_this->mEdges.at(this->shared_from_this());
+        } catch (const std::out_of_range &ex) { 
+            cout << "sorry! at "<< __func__ << "(n)" << endl; 
+            exit(1);
+        }
+    }
+
+    long depth() const
+    { return mDepth; }
+
     template<typename K>
-    node_type &addLeaf(K value, const long &cost = 1)
+    node_type &connect1(K value, const long &cost = 1)
     {
         auto leaf = Maker::makeNode(forward<K>(value));
         d_this->mEdges.insert(make_pair(leaf, cost));
@@ -113,11 +122,11 @@ struct Node : public std::enable_shared_from_this<Node<T>>
     template < typename... Leafs >
     void connect(Edge &&leaf, Leafs... ls)
     { 
-        this->connect2Way(move(leaf));
+        this->connect2(move(leaf));
         this->connect(forward<Leafs>(ls)...);
     }
 
-    void connect2Way(Edge &&leaf)
+    void connect2(Edge &&leaf)
     {
         leaf.destination()->d_this->mEdges.insert(make_pair(this->shared_from_this(), leaf.cost()));
         d_this->mEdges.insert(move(leaf.getInner()));
@@ -131,11 +140,12 @@ private:
             : mState(forward<T>(state)) {}
 
         const T mState;
-        unordered_map<node_ptr, long> mEdges;
+        nodeptr_cost_map mEdges;
     };
 
 private:
     long mCost = 0;
+    const long mDepth = 0;
     const node_ptr mParent;
     const shared_ptr<NodeData> d_this;
 };
@@ -148,27 +158,20 @@ R makeNode(T value)
 }
 
 template <typename T, typename R>
-R makeNode(T value, const R &p, const long &c = 0)
+typename std::enable_if<!std::is_same<R,T>::value, R>::type
+makeNode(T node, R parent, const long &c = 1)
 {
-    return Node<T>::Maker::makeNode(c, forward<T>(value), p);
+    return Node<T>::Maker::makeNode(forward<T>(node), forward<R>(parent), c);
 }
 
-template <typename R, typename Node = typename R::element_type>
-R makeNode(const R& value, const R &p, const long &c )
+template <typename R, typename Node = typename R::element_type, typename... Rest>
+R makeNode(R node, R parent, Rest...args )
 {
-    return Node::Maker::makeNode(c, value, p);
-}
-
-template<typename T, typename Functor>
-void mapToRoot(const shared_ptr<Node<T>> &node, Functor f)
-{
-    if ( !node ) 
-        return;
-
-    f( node );
-    mapToRoot( node->getParent(), f );
+    return Node::Maker::makeNode(forward<R>(node), forward<R>(parent), forward<Rest>(args)...);
 }
 
 }
+
+
 
 #endif
