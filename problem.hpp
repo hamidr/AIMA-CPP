@@ -142,7 +142,7 @@ ProblemMaker<E,G> makeProblem(const T &graph, const T &goal)
 #define END_PROBLEM })
 
 #define DefClassProblem(name, type) struct name : public Problem<type, name>
-#define DefConstructorProblem(p, initial) p() : Problem(initial)
+#define DefConstructorProblem(p, initial) p::p() : Problem(initial)
 
 }
 
