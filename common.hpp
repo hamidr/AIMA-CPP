@@ -1,18 +1,18 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
+#include <iostream>
+#include <tuple>
+
+using std::cout;
+using std::endl;
+using std::get;
+using std::tuple;
+using std::ostream;
+
+
 namespace AI 
 {
-
-namespace Private
-{
-
-template <typename T>
-struct NodePtrCompare : std::less<T>
-{
-     bool operator()(const T &lhs, const T &rhs) const 
-    { return lhs->getState() < rhs->getState(); }
-};
 
 template<typename T, int I>
 struct TuplePrint
@@ -65,6 +65,18 @@ void showRoute(const R & node )
     );
     cout << endl;
 }
+
+
+namespace Private
+{
+
+template <typename T>
+struct NodePtrCompare : std::less<T>
+{
+     bool operator()(const T &lhs, const T &rhs) const 
+    { return lhs->getState() < rhs->getState(); }
+};
+
 
 } // endnamespace Private
 
